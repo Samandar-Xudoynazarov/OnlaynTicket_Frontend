@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => ({
     port: parseInt(process.env.VITE_PORT || '3000'),
     proxy: {
       '/api': {
-        target: `http://localhost:8000`,
+        target: `https://onlaynticket-backend2.onrender.com`,
         changeOrigin: true,
       },
     },
