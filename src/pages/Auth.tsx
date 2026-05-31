@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function AuthPage() {
   const location = useLocation();
@@ -16,6 +17,7 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const { login, register } = useAuth();
 
+  const { t } = useTranslation();
   const [tab, setTab] = useState(isRegister ? "register" : "login");
   const [loading, setLoading] = useState(false);
 
@@ -91,14 +93,14 @@ export default function AuthPage() {
           <CardContent>
             <Tabs value={tab} onValueChange={setTab}>
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Kirish</TabsTrigger>
-                <TabsTrigger value="register">Ro'yxatdan o'tish</TabsTrigger>
+                <TabsTrigger value="login">{t("auth.loginBtn")}</TabsTrigger>
+                <TabsTrigger value="register">{t("auth.registerBtn")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
+                    <Label htmlFor="login-email">{t("auth.email")}</Label>
                     <Input
                       id="login-email"
                       type="email"
@@ -108,7 +110,7 @@ export default function AuthPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="login-password">Parol</Label>
+                    <Label htmlFor="login-password">{t("auth.password")}</Label>
                     <Input
                       id="login-password"
                       type="password"
@@ -118,8 +120,7 @@ export default function AuthPage() {
                     />
                   </div>
                   <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700" disabled={loading}>
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Kirish
+                    {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t("auth.loggingIn")}</> : t("auth.loginBtn")}
                   </Button>
                 </form>
               </TabsContent>
@@ -128,33 +129,32 @@ export default function AuthPage() {
                 <form onSubmit={handleRegister} className="space-y-4 mt-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName">Ism *</Label>
-                      <Input id="firstName" placeholder="Ism" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                      <Label htmlFor="firstName">{t("auth.firstName")} *</Label>
+                      <Input id="firstName" placeholder={t("auth.firstName")} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="lastName">Familya *</Label>
-                      <Input id="lastName" placeholder="Familya" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                      <Label htmlFor="lastName">{t("auth.lastName")} *</Label>
+                      <Input id="lastName" placeholder={t("auth.lastName")} value={lastName} onChange={(e) => setLastName(e.target.value)} />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="reg-email">Email *</Label>
+                    <Label htmlFor="reg-email">{t("auth.email")} *</Label>
                     <Input id="reg-email" type="email" placeholder="email@example.com" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Telefon</Label>
+                    <Label htmlFor="phone">{t("auth.phone")}</Label>
                     <Input id="phone" placeholder="+998 90 123 45 67" value={phone} onChange={(e) => setPhone(e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="reg-password">Parol *</Label>
-                    <Input id="reg-password" type="password" placeholder="Kamida 6 ta belgi" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} />
+                    <Label htmlFor="reg-password">{t("auth.password")} *</Label>
+                    <Input id="reg-password" type="password" placeholder="••••••" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Parolni tasdiqlang *</Label>
-                    <Input id="confirm-password" type="password" placeholder="Parolni qaytaring" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                    <Label htmlFor="confirm-password">{t("auth.password")} (confirm) *</Label>
+                    <Input id="confirm-password" type="password" placeholder="••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                   </div>
                   <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700" disabled={loading}>
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Ro'yxatdan o'tish
+                    {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t("auth.registering")}</> : t("auth.registerBtn")}
                   </Button>
                 </form>
               </TabsContent>

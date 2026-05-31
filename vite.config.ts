@@ -8,7 +8,7 @@ import { atoms } from '@metagptx/web-sdk/plugins';
 export default defineConfig(({ mode }) => ({
   plugins: [
     viteSourceLocator({
-      prefix: 'mgx', // 前缀用于标识源代码位置，不能修改
+      prefix: 'mgx', 
     }),
     react(),
     atoms(),
@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
-    host: '0.0.0.0', // 监听所有网络接口
+    host: '0.0.0.0',
     port: parseInt(process.env.VITE_PORT || '3000'),
     proxy: {
       '/api': {

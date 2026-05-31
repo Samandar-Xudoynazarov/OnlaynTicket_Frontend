@@ -57,12 +57,16 @@ export const myApi = {
   ticketDetail: (ticketId: string) => api.get(`/my/tickets/${ticketId}`),
   notifications: () => api.get("/my/notifications"),
   markRead: (id: string) => api.post(`/my/notifications/${id}/read`),
+  updateProfile: (data: { firstName?: string; lastName?: string; phone?: string }) =>
+    api.put("/my/profile", data),
 };
 
 // Organizer
 export const organizerApi = {
   createEvent: (formData: FormData) =>
     api.post("/organizer/events", formData, { headers: { "Content-Type": "multipart/form-data" } }),
+  updateEvent: (id: string, formData: FormData) =>
+    api.put(`/organizer/events/${id}`, formData, { headers: { "Content-Type": "multipart/form-data" } }),
   myEvents: () => api.get("/organizer/events"),
   getEvent: (id: string) => api.get(`/organizer/events/${id}`),
   getStats: (id: string) => api.get(`/organizer/events/${id}/stats`),
@@ -76,6 +80,8 @@ export const adminApi = {
   rejectEvent: (id: string, reason: string) => api.post(`/admin/events/${id}/reject`, { reason }),
   approvedReport: () => api.get("/admin/events/approved-report"),
   makeOrganizer: (userId: string) => api.post(`/admin/users/${userId}/make-organizer`),
+  listUsers: (params?: { page?: number; limit?: number; role?: string; q?: string }) =>
+    api.get("/admin/users", { params }),
 };
 
 // Ads

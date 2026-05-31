@@ -7,7 +7,28 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Calendar, MapPin, ChevronLeft, ChevronRight, Ticket } from "lucide-react";
+import { Search, Calendar, MapPin, ChevronLeft, ChevronRight, Ticket, CalendarDays } from "lucide-react";
+import { useTranslation } from "react-i18next";
+
+function getDateRange(filter: string): { dateFrom?: string; dateTo?: string } {
+  const now = new Date();
+  if (filter === "today") {
+    const start = new Date(now); start.setHours(0, 0, 0, 0);
+    const end = new Date(now); end.setHours(23, 59, 59, 999);
+    return { dateFrom: start.toISOString(), dateTo: end.toISOString() };
+  }
+  if (filter === "week") {
+    const start = new Date(now); start.setHours(0, 0, 0, 0);
+    const end = new Date(now); end.setDate(end.getDate() + 7); end.setHours(23, 59, 59, 999);
+    return { dateFrom: start.toISOString(), dateTo: end.toISOString() };
+  }
+  if (filter === "month") {
+    const start = new Date(now); start.setHours(0, 0, 0, 0);
+    const end = new Date(now); end.setMonth(end.getMonth() + 1); end.setHours(23, 59, 59, 999);
+    return { dateFrom: start.toISOString(), dateTo: end.toISOString() };
+  }
+  return {};
+}
 
 const HERO_BANNERS = [
   {
@@ -46,6 +67,7 @@ interface EventItem {
 
 interface AdBanner {
   _id: string;
+  mediaType: "image" | "video";
   imageUrl: string;
   link: string;
   deadline: string;
@@ -65,14 +87,13 @@ const CATEGORY_COLORS: Record<string, string> = {
   culture: "bg-amber-100 text-amber-700",
 };
 
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("uz-UZ", { day: "numeric", month: "long", year: "numeric" });
+function formatDate(dateStr: string, lang = "uz") {
+  const locale = lang === "ru" ? "ru-RU" : lang === "en" ? "en-US" : "uz-UZ";
+  return new Date(dateStr).toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric" });
 }
 
 function formatTime(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
+  return new Date(dateStr).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
 }
 
 export default function HomePage() {
@@ -83,11 +104,21 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [freeFilter, setFreeFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<string>("all");
   const [currentSlide, setCurrentSlide] = useState(0);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
+  const { t, i18n } = useTranslation();
   const category = searchParams.get("category") || "";
+  const region = searchParams.get("region") || "";
+
+  const DATE_FILTERS = [
+    { label: t("index.all"), value: "all" },
+    { label: t("index.today"), value: "today" },
+    { label: t("index.thisWeek"), value: "week" },
+    { label: t("index.thisMonth"), value: "month" },
+  ];
 
   // Load ads
   useEffect(() => {
@@ -99,9 +130,13 @@ export default function HomePage() {
     setLoading(true);
     const params: Record<string, string | number> = { page, limit: 12 };
     if (category) params.category = category;
+    if (region) params.region = region;
     if (freeFilter === "free") params.isFree = "true";
     if (freeFilter === "paid") params.isFree = "false";
     if (search.trim()) params.q = search.trim();
+    const dateRange = getDateRange(dateFilter);
+    if (dateRange.dateFrom) params.dateFrom = dateRange.dateFrom;
+    if (dateRange.dateTo) params.dateTo = dateRange.dateTo;
 
     eventsApi.list(params as Parameters<typeof eventsApi.list>[0])
       .then((res) => {
@@ -110,11 +145,15 @@ export default function HomePage() {
       })
       .catch(() => setEvents([]))
       .finally(() => setLoading(false));
-  }, [category, freeFilter, search, page]);
+  }, [category, region, freeFilter, dateFilter, search, page]);
 
   // Auto-slide banners
   const allBanners = ads.length > 0
-    ? ads.map((ad) => ({ image: ad.imageUrl, title: "", subtitle: "", link: ad.link }))
+    ? ads.map((ad) => ({
+        image: ad.mediaType === "video" ? "" : ad.imageUrl,
+        video: ad.mediaType === "video" ? ad.imageUrl : "",
+        title: "", subtitle: "", link: ad.link,
+      }))
     : HERO_BANNERS;
 
   useEffect(() => {
@@ -136,11 +175,22 @@ export default function HomePage() {
             key={i}
             className={`absolute inset-0 transition-opacity duration-700 ${i === currentSlide ? "opacity-100" : "opacity-0"}`}
           >
-            <img
-              src={banner.image}
-              alt={banner.title || "Banner"}
-              className="w-full h-full object-cover"
-            />
+            {(banner as { video?: string }).video ? (
+              <video
+                src={(banner as { video?: string }).video}
+                className="w-full h-full object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+            ) : (
+              <img
+                src={banner.image}
+                alt={banner.title || "Banner"}
+                className="w-full h-full object-cover"
+              />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
             {banner.title && (
               <div className="absolute bottom-16 left-0 right-0 text-center text-white px-4">
@@ -184,26 +234,46 @@ export default function HomePage() {
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
               {category ? CATEGORY_LABELS[category] || "Eventlar" : "Barcha eventlar"}
+              {region ? ` — ${region}` : ""}
             </h1>
             <p className="text-slate-500 mt-1">{total} ta event topildi</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            <div className="relative flex-1 sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Event qidirish..."
-                value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                className="pl-10"
-              />
+          <div className="flex flex-col gap-3 w-full md:w-auto">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1 sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder={t("index.searchPlaceholder")}
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  className="pl-10"
+                />
+              </div>
+              <Tabs value={freeFilter} onValueChange={(v) => { setFreeFilter(v); setPage(1); }}>
+                <TabsList>
+                  <TabsTrigger value="all">{t("index.all")}</TabsTrigger>
+                  <TabsTrigger value="paid">Pullik</TabsTrigger>
+                  <TabsTrigger value="free">{t("index.free")}</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
-            <Tabs value={freeFilter} onValueChange={(v) => { setFreeFilter(v); setPage(1); }}>
-              <TabsList>
-                <TabsTrigger value="all">Barchasi</TabsTrigger>
-                <TabsTrigger value="paid">Pullik</TabsTrigger>
-                <TabsTrigger value="free">Pulsiz</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            {/* Sana filtri */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <CalendarDays className="h-4 w-4 text-slate-400 shrink-0" />
+              {DATE_FILTERS.map((df) => (
+                <button
+                  key={df.value}
+                  onClick={() => { setDateFilter(df.value); setPage(1); }}
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-all border ${
+                    dateFilter === df.value
+                      ? "bg-indigo-600 text-white border-indigo-600"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600"
+                  }`}
+                >
+                  {df.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -224,8 +294,8 @@ export default function HomePage() {
         ) : events.length === 0 ? (
           <div className="text-center py-20">
             <Ticket className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-slate-600 mb-2">Eventlar topilmadi</h3>
-            <p className="text-slate-400">Boshqa filtrlarni sinab ko'ring</p>
+            <h3 className="text-xl font-semibold text-slate-600 mb-2">{t("index.noEvents")}</h3>
+            <p className="text-slate-400">{t("index.noEventsDesc")}</p>
           </div>
         ) : (
           <>
@@ -253,7 +323,7 @@ export default function HomePage() {
                         {CATEGORY_LABELS[event.category] || event.category}
                       </Badge>
                       {event.isFree && (
-                        <Badge className="bg-emerald-100 text-emerald-700 text-xs">Bepul</Badge>
+                        <Badge className="bg-emerald-100 text-emerald-700 text-xs">{t("common.free")}</Badge>
                       )}
                     </div>
                   </div>
@@ -263,7 +333,7 @@ export default function HomePage() {
                     </h3>
                     <div className="flex items-center gap-1.5 text-sm text-slate-500 mb-1">
                       <Calendar className="h-3.5 w-3.5" />
-                      <span>{formatDate(event.dateTime)} • {formatTime(event.dateTime)}</span>
+                      <span>{formatDate(event.dateTime, i18n.language)} • {formatTime(event.dateTime)}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-sm text-slate-500 mb-3">
                       <MapPin className="h-3.5 w-3.5" />
